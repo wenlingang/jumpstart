@@ -26,3 +26,16 @@ document.addEventListener("turbo:load", () => {
     return new bootstrap.Popover(popoverTriggerEl)
   })
 })
+
+// Support component names relative to this directory:
+const componentRequireContext = require.context("components", true)
+const ReactRailsUJS = require("react_ujs")
+ReactRailsUJS.useContext(componentRequireContext)
+
+// Hotfix，兼容 React 与 Turbo
+ReactRailsUJS.handleUnmount()
+ReactRailsUJS.handleEvent("turbo:load", ReactRailsUJS.handleMount)
+ReactRailsUJS.handleEvent(
+  "turbo:before-render",
+  ReactRailsUJS.handleUnmount
+)

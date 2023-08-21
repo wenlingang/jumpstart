@@ -13,7 +13,9 @@ def add_template_repository_to_source_path
     at_exit { FileUtils.remove_entry(tempdir) }
     git clone: [
       "--quiet",
-      "https://github.com/excid3/jumpstart.git",
+      "--branch",
+      "main",
+      "https://github.com/wenlingang/jumpstart.git",
       tempdir
     ].map(&:shellescape).join(" ")
 
@@ -44,12 +46,16 @@ def add_gems
   add_gem 'omniauth-facebook', '~> 8.0'
   add_gem 'omniauth-github', '~> 2.0'
   add_gem 'omniauth-twitter', '~> 1.4'
+  add_gem 'omniauth-feishu', '~> 0.1.8'
+  add_gem 'omniauth-dingtalk', '~> 0.3.1'
   add_gem 'pretender', '~> 0.3.4'
   add_gem 'pundit', '~> 2.1'
   add_gem 'sidekiq', '~> 6.2'
   add_gem 'sitemap_generator', '~> 6.1'
   add_gem 'whenever', require: false
   add_gem 'responders', github: 'heartcombo/responders', branch: 'main'
+  add_gem 'shakapacker', '~> 7.0', '>= 7.0.3'
+  add_gem 'react-rails', '~> 3.1', '>= 3.1.1'
 end
 
 def set_application_name
@@ -92,13 +98,14 @@ def default_to_esbuild
 end
 
 def add_javascript
-  run "yarn add local-time esbuild-rails trix @hotwired/stimulus @hotwired/turbo-rails @rails/activestorage @rails/ujs @rails/request.js chokidar"
+  run "yarn add local-time esbuild-rails trix @hotwired/stimulus @hotwired/turbo-rails @rails/activestorage @rails/ujs @rails/request.js chokidar react react-dom @babel/preset-react prop-types css-loader style-loader mini-css-extract-plugin css-minimizer-webpack-plugin antd tailwindcss --ignore-engines"
 end
 
 def copy_templates
   remove_file "app/assets/stylesheets/application.css"
   remove_file "app/javascript/application.js"
   remove_file "app/javascript/controllers/index.js"
+  remove_file "app/javascript/stylesheets/index.js"
   remove_file "Procfile.dev"
 
   copy_file "Procfile"
@@ -107,6 +114,8 @@ def copy_templates
   copy_file "esbuild.config.mjs"
   copy_file "app/javascript/application.js"
   copy_file "app/javascript/controllers/index.js"
+  copy_file "app/javascript/stylesheets/index.js"
+  copy_file "app/javascript/stylesheets/tailwind.css"
 
   directory "app", force: true
   directory "config", force: true
@@ -154,7 +163,7 @@ def add_multiple_authentication
 
   template = """
   env_creds = Rails.application.credentials[Rails.env.to_sym] || {}
-  %i{ facebook twitter github }.each do |provider|
+  %i{ facebook twitter github dingtalk feishu }.each do |provider|
     if options = env_creds[provider]
       config.omniauth provider, options[:app_id], options[:app_secret], options.fetch(:options, {})
     end
@@ -232,6 +241,8 @@ after_bundle do
   add_sitemap
   add_announcements_css
   rails_command "active_storage:install"
+  rails_command "shakapacker:install"
+  rails_command "react:install"
 
   # Make sure Linux is in the Gemfile.lock for deploying
   run "bundle lock --add-platform x86_64-linux"
